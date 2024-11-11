@@ -1,53 +1,52 @@
 def find_unproductive_non_terminals(grammar):
-    productive = set()
-    changed = True
+    productive_non_terminals = set()
 
-    while changed:
-        changed = False
+    # Iterate through all rules and collect productive non-terminals
+    for _ in range(len(grammar)):
         for non_terminal, rules in grammar.items():
-            if non_terminal in productive:
+            if non_terminal in productive_non_terminals:
                 continue
-            for rule in rules:
-                if all(symbol in productive or symbol.islower() for symbol in rule):
-                    productive.add(non_terminal)
-                    changed = True
-                    break
+            if any(all(symbol in productive_non_terminals or symbol.islower() for symbol in rule) for rule in rules):
+                productive_non_terminals.add(non_terminal)
 
-    return set(grammar.keys()) - productive
+    return set(grammar.keys()) - productive_non_terminals
 
 
 def find_unreachable_non_terminals(grammar, start_symbol="S"):
-    reachable = set([start_symbol])
-    changed = True
+    reachable_non_terminals = set()
 
-    while changed:
-        changed = False
-        for non_terminal in list(reachable):
-            for rule in grammar.get(non_terminal, []):
-                for symbol in rule:
-                    if symbol.isupper() and symbol not in reachable:
-                        reachable.add(symbol)
-                        changed = True
+    def dfs(non_terminal):
+        if non_terminal in reachable_non_terminals:
+            return
+        reachable_non_terminals.add(non_terminal)
+        for rule in grammar.get(non_terminal, []):
+            for symbol in rule:
+                if symbol.isupper():
+                    dfs(symbol)
 
-    return set(grammar.keys()) - reachable
+    # Start DFS from the start symbol
+    dfs(start_symbol)
+    return set(grammar.keys()) - reachable_non_terminals
 
 
 def find_nullable_non_terminals(grammar):
-    nullable = set()
-    changed = True
+    nullable_non_terminals = set()
+    stack = [non_terminal for non_terminal, rules in grammar.items() if [] in rules]
 
-    while changed:
-        changed = False
+    # Initially add all rules that can derive empty to nullable set
+    nullable_non_terminals.update(stack)
+
+    # Process stack and determine other nullable non-terminals
+    while stack:
+        current = stack.pop()
         for non_terminal, rules in grammar.items():
-            if non_terminal in nullable:
+            if non_terminal in nullable_non_terminals:
                 continue
-            for rule in rules:
-                if all(symbol in nullable for symbol in rule):
-                    nullable.add(non_terminal)
-                    changed = True
-                    break
+            if any(all(symbol in nullable_non_terminals for symbol in rule) for rule in rules):
+                nullable_non_terminals.add(non_terminal)
+                stack.append(non_terminal)
 
-    return nullable
+    return nullable_non_terminals
 
 
 # Example usage
